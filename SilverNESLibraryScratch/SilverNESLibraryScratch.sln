@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30218.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Emulate6502", "Emulate6502\Emulate6502.csproj", "{0A96A8FF-E00E-4972-8800-52009ABE915E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Emulate6502TestExecutor", "Emulate6502TestExecutor\Emulate6502TestExecutor.csproj", "{B12E15EE-D4C0-4686-B442-BFAAA1725E3D}"
