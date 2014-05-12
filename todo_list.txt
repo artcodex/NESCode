@@ -1,0 +1,11 @@
+ppu
+mappers
+interrupts
+general
+input
+sound
+test harness/bits (espescially for cpu)
+integrated debugger
+what does the 14bit address value actually address ?
+make sure wrap around is implemented for address additions
+Should cpu be separate from main memory?

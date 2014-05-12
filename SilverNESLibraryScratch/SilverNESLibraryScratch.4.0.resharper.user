@@ -1,0 +1,174 @@
+<Configuration>
+  <UnitTestRunner>
+    <CustomStartDirectory>
+    </CustomStartDirectory>
+    <UseShadowCopy>True</UseShadowCopy>
+    <UseCustomFolder>False</UseCustomFolder>
+    <EnableUnitTesting>True</EnableUnitTesting>
+    <Providers />
+  </UnitTestRunner>
+  <RecentFiles>
+    <RecentFiles>
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:NameTable.cs" caret="2438" scrollPosition="0|87" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:NameTables.cs" caret="3015" scrollPosition="0|79" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:Palette.cs" caret="2283" scrollPosition="0|66" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PatternTable.cs" caret="2506" scrollPosition="0|60" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:SpriteRam.cs" caret="1671" scrollPosition="0|14" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:Memory/f:Stack.cs" caret="2991" scrollPosition="0|96" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:Memory/f:RamMemory.cs" caret="2714" scrollPosition="0|0" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:Memory/f:MemoryMapper.cs" caret="432" scrollPosition="0|0" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:Memory/f:Memory.cs" caret="6045" scrollPosition="0|204" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:CartridgeTests/f:CartridgeTests.cs" caret="706" scrollPosition="0|0" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:Cartridge/f:Cartridge.cs" caret="1150" scrollPosition="0|75" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="13804" scrollPosition="0|347" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:CpuObjects/f:OpCodes.cs" caret="0" scrollPosition="0|0" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:CpuObjects/f:Cpu.cs" caret="54386" scrollPosition="0|129" />
+    </RecentFiles>
+    <RecentEdits>
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:Palette.cs" caret="1833" scrollPosition="0|24" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:Palette.cs" caret="551" scrollPosition="0|0" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="5033" scrollPosition="0|117" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="5787" scrollPosition="0|117" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:Memory/f:Memory.cs" caret="6045" scrollPosition="0|15" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:Memory/f:Memory.cs" caret="1211" scrollPosition="0|15" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="3508" scrollPosition="0|102" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="7818" scrollPosition="0|164" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="7588" scrollPosition="0|164" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="8008" scrollPosition="0|173" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="8190" scrollPosition="0|173" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="4895" scrollPosition="0|98" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="743" scrollPosition="0|11" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="9767" scrollPosition="8|221" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="9794" scrollPosition="8|221" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="10481" scrollPosition="12|224" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="6369" scrollPosition="0|140" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="10831" scrollPosition="0|233" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="4695" scrollPosition="0|143" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="3694" scrollPosition="0|101" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="14248" scrollPosition="0|260" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="11561" scrollPosition="0|278" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="11832" scrollPosition="0|278" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="12393" scrollPosition="0|280" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="13113" scrollPosition="0|326" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="11327" scrollPosition="0|269" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="13404" scrollPosition="0|326" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="14099" scrollPosition="0|344" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="13947" scrollPosition="0|344" />
+      <File id="0A96A8FF-E00E-4972-8800-52009ABE915E/d:PPU/f:PPU.cs" caret="13486" scrollPosition="0|353" />
+    </RecentEdits>
+  </RecentFiles>
+  <SettingsComponent>
+    <string />
+    <integer />
+    <boolean>
+      <setting name="livetemplates.csharp.usevar">True</setting>
+      <setting name="SolutionAnalysisEnabled">False</setting>
+      <setting name="UseSolutionBuilder">False</setting>
+    </boolean>
+  </SettingsComponent>
+  <NAntValidationSettings>
+    <NAntPath value="" />
+  </NAntValidationSettings>
+  <CompletionStatisticsManager>
+    <ItemStatistics item="Default">
+      <Item value="InitialisePPU" priority="0" />
+      <Item value="_currentLoadedLatch" priority="2" />
+      <Item value="public" priority="13" />
+      <Item value="const" priority="3" />
+      <Item value="uint" priority="13" />
+      <Item value="private" priority="20" />
+      <Item value="byte" priority="13" />
+      <Item value="void" priority="13" />
+      <Item value="_patternTable" priority="3" />
+      <Item value="new" priority="6" />
+      <Item value="PATTERN_TABLE_SIZE" priority="2" />
+      <Item value="InitializePatternTable" priority="0" />
+      <Item value="MemoryMapper" priority="4" />
+      <Item value="AddressMapping" priority="2" />
+      <Item value="if" priority="13" />
+      <Item value="_mappings" priority="4" />
+      <Item value="Contains" priority="0" />
+      <Item value="mapper" priority="2" />
+      <Item value="IndexOf" priority="1" />
+      <Item value="Remove" priority="0" />
+      <Item value="newMapping" priority="7" />
+      <Item value="foreach" priority="0" />
+      <Item value="Ranges" priority="4" />
+      <Item value="int" priority="0" />
+      <Item value="Count" priority="0" />
+      <Item value="mark" priority="4" />
+      <Item value="RangeStart" priority="0" />
+      <Item value="RangeEnd" priority="0" />
+      <Item value="break" priority="8" />
+      <Item value="RemoveAt" priority="0" />
+      <Item value="PPU" priority="2" />
+      <Item value="_startAddress" priority="2" />
+      <Item value="PPUMemory" priority="2" />
+      <Item value="RemoveMemoryMapping" priority="0" />
+      <Item value="Memory" priority="1" />
+      <Item value="address" priority="14" />
+      <Item value="return" priority="12" />
+      <Item value="else" priority="11" />
+      <Item value="throw" priority="1" />
+      <Item value="IndexOutOfRangeException" priority="1" />
+      <Item value="_parentPPU" priority="2" />
+      <Item value="AttachMemoryMapping" priority="1" />
+      <Item value="this" priority="0" />
+      <Item value="start" priority="1" />
+      <Item value="SetPPUMapping" priority="0" />
+      <Item value="Palette" priority="0" />
+      <Item value="ppu" priority="0" />
+      <Item value="_bg_pal" priority="3" />
+      <Item value="NES_PALETTE_SIZE" priority="1" />
+      <Item value="_sp_pal" priority="3" />
+      <Item value="PALETTE_MAP_START" priority="0" />
+      <Item value="PALETTE_MAP_END" priority="0" />
+      <Item value="value" priority="19" />
+      <Item value="InitializePalette" priority="0" />
+      <Item value="data" priority="4" />
+      <Item value="_ppuStatus" priority="3" />
+      <Item value="_ppuMemory" priority="1" />
+      <Item value="Read" priority="0" />
+      <Item value="temp" priority="1" />
+      <Item value="override" priority="0" />
+      <Item value="_mapper" priority="0" />
+      <Item value="GetHashCode" priority="0" />
+      <Item value="_vramAddressRegister" priority="9" />
+      <Item value="_vramInc" priority="3" />
+      <Item value="ushort" priority="12" />
+      <Item value="_ppuControl0" priority="1" />
+      <Item value="_spriteRam" priority="4" />
+      <Item value="SpriteSize" priority="0" />
+      <Item value="SpriteSizeOption" priority="0" />
+      <Item value="_spriteTable" priority="2" />
+      <Item value="SetPatternTable" priority="1" />
+      <Item value="PatternTableSelection" priority="1" />
+      <Item value="_bgTable" priority="0" />
+      <Item value="VRamIncOptions" priority="0" />
+      <Item value="_vramAddressRegisterTemp" priority="9" />
+      <Item value="_ppuControl1" priority="3" />
+      <Item value="SpriteRamAddress" priority="0" />
+      <Item value="case" priority="4" />
+      <Item value="WriteData" priority="0" />
+      <Item value="SpriteRam" priority="1" />
+      <Item value="SPRITE_RAM_SIZE" priority="1" />
+      <Item value="_ricoh6502" priority="0" />
+      <Item value="MainMemory" priority="0" />
+      <Item value="ReadBlock" priority="0" />
+      <Item value="cpuRamAddress" priority="1" />
+      <Item value="spriteData" priority="1" />
+      <Item value="WriteDMA" priority="0" />
+      <Item value="_isFirstWrite" priority="4" />
+      <Item value="_x" priority="0" />
+      <Item value="Write" priority="0" />
+      <Item value="WriteVideoRam" priority="0" />
+      <Item value="bool" priority="4" />
+      <Item value="FrameStart" priority="0" />
+      <Item value="ref" priority="3" />
+      <Item value="vReg" priority="12" />
+      <Item value="EndTile" priority="0" />
+      <Item value="IsSpritesVisible" priority="0" />
+      <Item value="IsBackgroundVisible" priority="0" />
+    </ItemStatistics>
+  </CompletionStatisticsManager>
+</Configuration>

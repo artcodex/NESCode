@@ -1,0 +1,22 @@
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\Emulate6502.Test.dll
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\Emulate6502.Test.pdb
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\Emulate6502.dll
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\nunit.framework.dll
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\nunit.mocks.dll
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\Emulate6502.pdb
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\nunit.framework.xml
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\obj\Debug\Emulate6502.Test.dll
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502.Test\obj\Debug\Emulate6502.Test.pdb
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\Emulate6502.Test.dll
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\Emulate6502.Test.pdb
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\Emulate6502.dll
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\nunit.framework.dll
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\nunit.mocks.dll
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\Emulate6502.pdb
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\bin\Debug\nunit.framework.xml
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\obj\Debug\Emulate6502.Test.dll
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502.Test\obj\Debug\Emulate6502.Test.pdb
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502.Test\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502.Test\obj\Debug\Emulate6502.Test.dll

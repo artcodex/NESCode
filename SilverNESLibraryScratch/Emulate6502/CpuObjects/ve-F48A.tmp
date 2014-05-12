@@ -1,0 +1,334 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+
+namespace Emulate6502.CpuObjects
+{
+    public enum AddressingMode
+    {
+        Immediate = 0,
+        ZeroPage = 1,
+        ZeroPageX = 2,
+        Absolute = 3,
+        AbsouteX = 4,
+        AbsoluteY = 5,
+        IndirectX = 6,
+        IndirectY = 7,
+        IndirectAbsolute = 8,
+        ZeroPageY = 9,
+        Relative = 10
+    }
+
+    public class Cpu
+    {
+        private byte _accumulator;
+        private byte _x, _y;
+
+        private ushort _pc;
+        private byte _sp;
+        private byte _ps;
+
+        private Stack _stack;
+        private Memory _mainMemory;
+
+        private const uint STACK_SIZE = 256;
+        private byte _cycles;
+        private OpCodes _opCode;
+
+        private bool _break;
+
+        private const byte CYCLE_PERIOD = 64;
+        private const long CYCLES_PER_SECOND = 179;
+        private const long MULTIPLIER = 10000;
+        private long _runTicks = 0;
+        private long _sleepTicks = 0;
+
+        public Cpu()
+        {
+            _mainMemory = new Memory();
+            _stack = new Stack(STACK_SIZE, 0x01FF, true, _mainMemory);
+            _pc = 0;
+            _accumulator = 0;
+            _x = 0;
+            _y = 0;
+            _cycles = CYCLE_PERIOD;
+            _opCode = OpCodes.ADC_A;
+            _break = false;
+            _runTicks = TimeSpan.FromMilliseconds(1.0 / CYCLES_PER_SECOND).Ticks;
+            _sleepTicks = _runTicks / (MULTIPLIER * 50);
+        }
+
+        #region Flag Operations Helper
+        private bool IsCarry
+        {
+            get
+            {
+                return (_ps & 0x01) == 0x01;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x01;
+                }
+                else
+                {
+                    _ps &= 0xfe;
+                }
+            }
+        }
+
+        private bool IsZero
+        {
+            get
+            {
+                return (_ps & 0x02) == 0x02;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x02;
+                }
+                else
+                {
+                    _ps &= 0xfd;
+                }
+            }
+        }
+
+        private bool InterruptsEnabled
+        {
+            get
+            {
+                return (_ps & 0x04) == 0x04;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x04;
+                }
+                else
+                {
+                    _ps &= 0xfb;
+                }
+            }
+        }
+
+        private bool IsDecimalMode
+        {
+            get
+            {
+                return (_ps & 0x08) == 0x08;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x08;
+                }
+                else
+                {
+                    _ps &= 0xf7;
+                }
+            }
+        }
+
+        private bool IsSoftwareInterrupt
+        {
+            get
+            {
+                return (_ps & 0x10) == 0x10;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x10;
+                }
+                else
+                {
+                    _ps &= 0xef;
+                }
+            }
+        }
+
+        private bool IsOverflow
+        {
+            get
+            {
+                return (_ps & 0x40) == 0x20;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x40;
+                }
+                else
+                {
+                    _ps &= 0xbf;
+                }
+            }
+        }
+
+        private bool IsPositive
+        {
+            get
+            {
+                return (_ps & 0x80) != 0x80;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x80;
+                }
+                else
+                {
+                    _ps &= 0x7f;
+                }
+            }
+        }
+
+        private void SetZero(uint result)
+        {
+            if ((result & 0xff) == 0x00)
+            {
+                IsZero = true;
+            }
+        }
+
+        private void SetCarry(uint result)
+        {
+            if (result > 0xff)
+            {
+                IsCarry = true;
+            }
+        }
+
+        private void SetOverflow(uint result)
+        {
+            if 
+        }
+        #endregion
+
+        //originalValue can be 0 if addressing mode doesn't require it
+        private ushort TranslateAddress(ushort originalValue, AddressingMode mode)
+        {
+            switch (mode)
+            {
+                case AddressingMode.Absolute:
+                    return originalValue;
+                case AddressingMode.AbsoluteY:
+                    return (ushort)(originalValue + ((int)_y));
+                case AddressingMode.AbsouteX:
+                    return (ushort)(originalValue + ((int)_x));
+                case AddressingMode.Immediate:
+                    return originalValue;
+                case AddressingMode.IndirectAbsolute:
+                    {
+                        ushort buffer = (ushort)_mainMemory.Read(originalValue);
+                        buffer |= (ushort)(((int)_mainMemory.Read((ushort)(originalValue + 1))) << 8);
+
+                        return buffer;
+                    }
+                case AddressingMode.IndirectX:
+                    {
+                        uint finalAddress = originalValue + (uint)_x;
+                        ushort buffer = (ushort)_mainMemory.Read(finalAddress);
+                        buffer |= (ushort)(((int)_mainMemory.Read((ushort)(finalAddress + 1))) << 8);
+
+                        return buffer;
+                    }
+                case AddressingMode.IndirectY:
+                    {
+                        ushort buffer = (ushort)_mainMemory.Read(originalValue);
+                        buffer |= (ushort)(((int)_mainMemory.Read((ushort)(originalValue + 1))) << 8);
+
+                        return (ushort)(buffer + _y);
+                    }
+            }
+
+            return originalValue;
+        }
+
+        private ushort Read16bitAddressAtPC()
+        {
+            ushort temp = 0;
+
+            temp = _mainMemory.Read(_pc++);
+            temp += (ushort)(_mainMemory.Read(_pc++) << 8);
+
+            return temp;
+        }
+
+        public void Run()
+        {
+            DateTime startTime = DateTime.Now, endTime = DateTime.Now;
+            TimeSpan scratch = TimeSpan.FromMilliseconds(0.0);
+            ushort tempAdd = 0;
+            byte memVal = 0;
+            uint tempResult;
+
+            _pc = 0x0000;
+
+            for (; ; )
+            {
+                scratch = DateTime.Now.Subtract(startTime);
+                scratch = TimeSpan.FromTicks(scratch.Ticks * MULTIPLIER);
+
+                if (scratch.Ticks < _runTicks)
+                {
+                    Thread.Sleep(TimeSpan.FromTicks(_sleepTicks));
+                    continue;
+                }
+
+                startTime = DateTime.Now;
+                
+                _cycles -= 1;//opcode counter;
+                
+                //read the current opcode
+                _opCode = (OpCodes)_mainMemory.Read(_pc++);
+
+                //perform the opcode
+                switch (_opCode)
+                {
+                    case OpCodes.ADC_A:
+                        {
+                            tempAdd = Read16bitAddressAtPC();
+                            tempAdd = TranslateAddress(tempAdd, AddressingMode.Absolute);
+                            memVal = _mainMemory.Read(tempAdd);
+
+                            //perform the operation
+                            tempResult = (uint)memVal + (uint)_accumulator;
+
+                            
+                           
+
+                            break;
+                        }
+                    case OpCodes.BRK:
+                        //make this optional
+                        Debugger.Launch();
+                        break;
+                    default:
+                        throw new Exception("Bad opcode");
+                }
+                
+                if (_cycles <= 0)
+                {
+                    if (_break)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}

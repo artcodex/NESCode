@@ -1,0 +1,1234 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+
+namespace Emulate6502.CpuObjects
+{
+    public enum AddressingMode
+    {
+        Immediate = 0,
+        ZeroPage = 1,
+        ZeroPageX = 2,
+        Absolute = 3,
+        AbsoluteX = 4,
+        AbsoluteY = 5,
+        IndirectX = 6,
+        IndirectY = 7,
+        IndirectAbsolute = 8,
+        ZeroPageY = 9,
+        Relative = 10,
+        Accumulator = 11
+    }
+
+    public class Cpu
+    {
+        private byte _accumulator;
+        private byte _x, _y;
+
+        private ushort _pc;
+        private byte _sp;
+        private byte _ps;
+
+        private Stack _stack;
+        private Memory _mainMemory;
+
+        private const uint STACK_SIZE = 256;
+        private byte _cycles;
+        private OpCodes _opCode;
+
+        private bool _break;
+
+        private const byte CYCLE_PERIOD = 64;
+        private const long CYCLES_PER_SECOND = 179;
+        private const long MULTIPLIER = 10000;
+        private long _runTicks = 0;
+        private long _sleepTicks = 0;
+
+        public Cpu()
+        {
+            _mainMemory = new Memory();
+            _stack = new Stack(STACK_SIZE, 0x01FF, true, _mainMemory);
+            _pc = 0;
+            _accumulator = 0;
+            _x = 0;
+            _y = 0;
+            _cycles = CYCLE_PERIOD;
+            _opCode = OpCodes.ADC_A;
+            _break = false;
+            _runTicks = TimeSpan.FromMilliseconds(1.0 / CYCLES_PER_SECOND).Ticks;
+            _sleepTicks = _runTicks / (MULTIPLIER * 50);
+        }
+
+        #region Flag Operations Helper
+        private bool IsCarry
+        {
+            get
+            {
+                return (_ps & 0x01) == 0x01;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x01;
+                }
+                else
+                {
+                    _ps &= 0xfe;
+                }
+            }
+        }
+
+        private bool IsZero
+        {
+            get
+            {
+                return (_ps & 0x02) == 0x02;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x02;
+                }
+                else
+                {
+                    _ps &= 0xfd;
+                }
+            }
+        }
+
+        private bool InterruptsEnabled
+        {
+            get
+            {
+                return (_ps & 0x04) != 0x04;
+            }
+            set
+            {
+                if (!value)
+                {
+                    _ps |= 0x04;
+                }
+                else
+                {
+                    _ps &= 0xfb;
+                }
+            }
+        }
+
+        private bool IsDecimalMode
+        {
+            get
+            {
+                return (_ps & 0x08) == 0x08;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x08;
+                }
+                else
+                {
+                    _ps &= 0xf7;
+                }
+            }
+        }
+
+        private bool IsSoftwareInterrupt
+        {
+            get
+            {
+                return (_ps & 0x10) == 0x10;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x10;
+                }
+                else
+                {
+                    _ps &= 0xef;
+                }
+            }
+        }
+
+        private bool IsOverflow
+        {
+            get
+            {
+                return (_ps & 0x40) == 0x20;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x40;
+                }
+                else
+                {
+                    _ps &= 0xbf;
+                }
+            }
+        }
+
+        private bool IsPositive
+        {
+            get
+            {
+                return (_ps & 0x80) != 0x80;
+            }
+            set
+            {
+                if (value)
+                {
+                    _ps |= 0x80;
+                }
+                else
+                {
+                    _ps &= 0x7f;
+                }
+            }
+        }
+
+        private void SetSign(uint result)
+        {
+            IsPositive = (result & 0x80) != 0x80;
+        }
+
+        private void SetZero(uint result)
+        {
+            IsZero = (result & 0xff) == 0x00;
+        }
+
+        private void SetCarry(uint result)
+        {
+            IsCarry = result > 0xff;
+        }
+
+        private void SetOverflow(uint memVal, uint result)
+        {
+            //if acc and src are both positive then result should be 
+            //positive, else if they are both negative result should be negative
+            //so if sign bit of result is different to operands we have an overflow
+            IsOverflow = !(((_accumulator ^ memVal) & 0x80) == 0x80) && (((_accumulator ^ result) & 0x80) == 0x80);
+        }
+        #endregion
+
+        #region Memory Helpers
+        //originalValue can be 0 if addressing mode doesn't require it
+        private ushort TranslateAddress(ushort originalValue, AddressingMode mode)
+        {
+            switch (mode)
+            {
+                case AddressingMode.Absolute:
+                    return originalValue;
+                case AddressingMode.AbsoluteY:
+                    return (ushort)(originalValue + ((int)_y));
+                case AddressingMode.AbsoluteX:
+                    return (ushort)(originalValue + ((int)_x));
+                case AddressingMode.ZeroPageX:
+                    return (ushort)(originalValue + ((int)_x));
+                case AddressingMode.ZeroPageY:
+                    return (ushort)(originalValue + ((int)_y));
+                case AddressingMode.Immediate:
+                    return originalValue;
+                case AddressingMode.Relative:
+                    {
+                        //if this is a negative value take the 2's complement
+                        if ((originalValue & 0x80) == 0x80)
+                        {
+                            originalValue = (ushort)~originalValue;
+                            originalValue += 1;
+
+                            return (ushort)(_pc - originalValue);
+                        }
+                        else
+                        {
+                            return (ushort)(_pc + originalValue);
+                        }
+                    }
+                case AddressingMode.IndirectAbsolute:
+                    {
+                        ushort buffer = (ushort)_mainMemory.Read(originalValue);
+                        buffer |= (ushort)(((int)_mainMemory.Read((ushort)(originalValue + 1))) << 8);
+
+                        return buffer;
+                    }
+                case AddressingMode.IndirectX:
+                    {
+                        uint finalAddress = originalValue + (uint)_x;
+                        ushort buffer = (ushort)_mainMemory.Read(finalAddress);
+                        buffer |= (ushort)(((int)_mainMemory.Read((ushort)(finalAddress + 1))) << 8);
+
+                        return buffer;
+                    }
+                case AddressingMode.IndirectY:
+                    {
+                        ushort buffer = (ushort)_mainMemory.Read(originalValue);
+                        buffer |= (ushort)(((int)_mainMemory.Read((ushort)(originalValue + 1))) << 8);
+
+                        return (ushort)(buffer + _y);
+                    }
+                default:
+                    return originalValue;
+            }
+        }
+
+        private void TranslateValueToMemory(AddressingMode nextInstrAddr, byte finalValue)
+        {
+            ushort tempAdd = 0;
+            bool isMemValSet = false;
+
+            switch (nextInstrAddr)
+            {
+                case AddressingMode.Absolute:
+                    {
+                        tempAdd = Read16bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.Absolute);
+
+                        break;
+                    }
+                case AddressingMode.AbsoluteX:
+                    {
+                        tempAdd = Read16bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.AbsoluteX);
+
+                        break;
+                    }
+                case AddressingMode.AbsoluteY:
+                    {
+                        tempAdd = Read16bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.AbsoluteY);
+
+                        break;
+                    }
+                case AddressingMode.Accumulator:
+                    {
+                        _accumulator = finalValue;
+                        isMemValSet = true;
+
+                        break;
+                    }
+                case AddressingMode.IndirectAbsolute:
+                    {
+                        tempAdd = Read16bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.IndirectAbsolute);
+
+                        break;
+                    }
+                case AddressingMode.IndirectX:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.IndirectX);
+
+                        break;
+                    }
+                case AddressingMode.IndirectY:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.IndirectY);
+
+                        break;
+                    }
+                case AddressingMode.Relative:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.Relative);
+
+                        break;
+                    }
+                case AddressingMode.ZeroPage:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.ZeroPage);
+
+                        break;
+                    }
+                case AddressingMode.ZeroPageX:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.ZeroPageX);
+
+                        break;
+                    }
+                case AddressingMode.ZeroPageY:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.ZeroPageY);
+
+                        break;
+                    }
+            }
+
+            if (!isMemValSet)
+            {
+                _mainMemory.Write(tempAdd, finalValue);
+            }
+        }
+
+        private byte TranslateToMemoryValue(AddressingMode nextInstrAddr)
+        {
+            ushort tempAdd = 0;
+            bool isMemValSet = false;
+            byte finalVal = 0;
+
+            switch (nextInstrAddr)
+            {
+                case AddressingMode.Absolute:
+                    {
+                        tempAdd = Read16bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.Absolute);
+
+                        break;
+                    }
+                case AddressingMode.AbsoluteX:
+                    {
+                        tempAdd = Read16bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.AbsoluteX);
+
+                        break;
+                    }
+                case AddressingMode.AbsoluteY:
+                    {
+                        tempAdd = Read16bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.AbsoluteY);
+
+                        break;
+                    }
+                case AddressingMode.Immediate:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        finalVal = (byte)tempAdd;
+                        isMemValSet = true;
+
+                        break;
+                    }
+                case AddressingMode.Accumulator:
+                    {
+                        finalVal = _accumulator;
+                        isMemValSet = true;
+
+                        break;
+                    }
+                case AddressingMode.IndirectAbsolute:
+                    {
+                        tempAdd = Read16bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.IndirectAbsolute);
+
+                        break;
+                    }
+                case AddressingMode.IndirectX:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.IndirectX);
+
+                        break;
+                    }
+                case AddressingMode.IndirectY:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.IndirectY);
+
+                        break;
+                    }
+                case AddressingMode.Relative:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.Relative);
+
+                        break;
+                    }
+                case AddressingMode.ZeroPage:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.ZeroPage);
+
+                        break;
+                    }
+                case AddressingMode.ZeroPageX:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.ZeroPageX);
+
+                        break;
+                    }
+                case AddressingMode.ZeroPageY:
+                    {
+                        tempAdd |= Read8bitAddressAtPC();
+                        tempAdd = TranslateAddress(tempAdd, AddressingMode.ZeroPageY);
+
+                        break;
+                    }
+            }
+
+            if (!isMemValSet)
+            {
+                finalVal = _mainMemory.Read(tempAdd);
+            }
+
+            return finalVal;
+        }
+
+        private ushort Read16bitAddressAtPC()
+        {
+            ushort temp = 0;
+
+            temp = _mainMemory.Read(_pc++);
+            temp += (ushort)(_mainMemory.Read(_pc++) << 8);
+
+            return temp;
+        }
+
+        private byte Read8bitAddressAtPC()
+        {
+            return _mainMemory.Read(_pc++);
+        }
+
+        #endregion
+
+        #region OpCode Helpers
+        private void AddWithCarry(uint memVal)
+        {
+            uint tempResult = 0;
+
+            //perform the operation
+            tempResult = (uint)memVal + (uint)_accumulator;
+
+            if (IsCarry)
+            {
+                tempResult++;
+            }
+
+            SetCarry(tempResult);
+            SetSign(tempResult);
+            SetOverflow((uint)memVal, tempResult);
+            SetZero(tempResult);
+
+            _accumulator = (byte)tempResult;
+        }
+
+        private void And(uint memVal)
+        {
+            memVal &= _accumulator;
+
+            SetSign(memVal);
+            SetZero(memVal);
+
+            _accumulator = (byte)memVal;
+        }
+
+        private void Xor(uint memVal)
+        {
+            memVal ^= _accumulator;
+            SetSign(memVal);
+            SetZero(memVal);
+            _accumulator = (byte)memVal;
+        }
+
+        private void Or(uint memVal)
+        {
+            memVal |= _accumulator;
+            SetSign(memVal);
+            SetZero(memVal);
+            _accumulator = (byte)memVal;
+        }
+
+        private byte ArithmeticShiftLeft(uint memVal)
+        {
+            IsCarry = ((memVal & 0x80) == 0x80);
+            memVal <<= 1;
+            memVal &= 0xff;
+
+            SetSign(memVal);
+            SetZero(memVal);
+
+            return (byte)memVal;
+        }
+
+        private byte ArithmeticShiftRight(uint memVal)
+        {
+            IsCarry = ((memVal & 0x01) == 0x01);
+            memVal >>= 1;
+
+            SetSign(memVal);
+            SetZero(memVal);
+
+            return (byte)memVal;
+        }
+
+
+        private void BranchOnCarry(uint addr, bool isSet)
+        {
+            if (IsCarry == isSet)
+            {
+                //will work differently for clock cycles here (when we take this into account)
+                if ((addr & 0xFF00) != (_pc & 0xFF00))
+                {
+
+                }
+
+                //performing jump now
+                _pc = (ushort)addr;
+            }
+        }
+
+
+        private void BranchOnZero(uint addr, bool isSet)
+        {
+            if (IsZero == isSet)
+            {
+                _pc = (ushort)addr;
+            }
+        }
+
+        private void BranchOnSign(uint addr, bool isSet)
+        {
+            if (IsPositive != isSet)
+            {
+                _pc = (ushort)addr;
+            }
+        }
+
+        private void BranchOnOverflow(uint addr, bool isSet)
+        {
+            if (IsOverflow == isSet)
+            {
+                _pc = (ushort)addr;
+            }
+        }
+
+        private void TestBits(uint memVal)
+        {
+            SetSign(memVal);
+            IsOverflow = (memVal & 0x40) == 0x40;
+            SetZero(memVal & _accumulator);
+        }
+
+        private void Break()
+        {
+            _pc++;
+            _stack.Push((byte)((_pc >> 8) & 0xff));
+            _stack.Push((byte)(_pc & 0xff));
+            IsSoftwareInterrupt = true;
+            _stack.Push(_ps);
+            InterruptsEnabled = false;
+            _pc = TranslateAddress(0xFFFE, AddressingMode.IndirectAbsolute);
+        }
+
+        private void Compare(uint memVal, byte reg)
+        {
+            switch (reg)
+            {
+                case 0:
+                    memVal -= _accumulator;
+                    break;
+                case 1:
+                    memVal -= _x;
+                    break;
+                case 2:
+                    memVal -= _y;
+                    break;
+            }
+
+            if (memVal < 0x100)
+            {
+                IsCarry = true;
+            }
+
+            SetSign(memVal);
+            SetZero(memVal & 0xff);
+            memVal &= 0xff;
+        }
+
+        private byte Decrement(uint memVal)
+        {
+            memVal = (memVal - 1) & 0xff;
+            SetSign(memVal);
+            SetZero(memVal);
+
+            return (byte)memVal;
+        }
+
+        private byte Increment(uint memVal)
+        {
+            memVal = (memVal + 1) & 0xff;
+            SetSign(memVal);
+            SetZero(memVal);
+
+            return (byte)memVal;
+        }
+
+        private void Decrement(byte reg)
+        {
+            uint temp = (reg == 0) ? _x : _y;
+            temp = (temp - 1) & 0xff;
+            SetSign(temp);
+            SetZero(temp);
+
+            if (reg == 0)
+            {
+                _x = (byte)temp;
+            }
+            else
+            {
+                _y = (byte)temp;
+            }
+        }
+
+        private void Increment(byte reg)
+        {
+            uint temp = (reg == 0) ? _x : _y;
+            temp = (temp + 1) & 0xff;
+            SetSign(temp);
+            SetZero(temp);
+
+            if (reg == 0)
+            {
+                _x = (byte)temp;
+            }
+            else
+            {
+                _y = (byte)temp;
+            }
+        }
+
+        private void Jump(uint addr, bool shouldSave)
+        {
+            if (shouldSave)
+            {
+                //how far back should we be going?
+                _pc--;
+                _stack.Push((byte)((_pc >> 8) & 0xff));
+                _stack.Push((byte)(_pc & 0xff));
+            }
+
+            _pc = (ushort)addr;
+        }
+
+        private void Load(uint memVal, byte reg)
+        {
+            SetSign(memVal);
+            SetZero(memVal);
+
+            switch (reg)
+            {
+                case 0:
+                    _accumulator = (byte)memVal;
+                    break;
+                case 1:
+                    _x = (byte)memVal;
+                    break;
+                case 2:
+                    _y = (byte)memVal;
+                    break;
+            }
+        }
+
+        private void PullFromStack(byte reg)
+        {
+            switch (reg)
+            {
+                case 0:
+                    _accumulator = _stack.Pop();
+                    SetSign(_accumulator);
+                    SetZero(_accumulator);
+                    break;
+                case 1:
+                    _ps = _stack.Pop();
+                    break;
+            }
+        }
+
+        private void PushToStack(byte reg)
+        {
+            switch (reg)
+            {
+                case 0:
+                    _stack.Push(_accumulator);
+                    break;
+                case 1:
+                    _stack.Push(_ps);
+                    break;
+            }
+        }
+
+        private byte RotateLeft(uint memVal)
+        {
+            memVal <<= 1;
+            memVal |= IsCarry ? (uint)0x01 : (uint)0x00;
+            SetCarry(memVal);
+            memVal &= 0xff;
+            SetSign(memVal);
+            SetZero(memVal);
+
+            return (byte)memVal;
+        }
+
+        private byte RotateRight(uint memVal)
+        {
+            memVal |= IsCarry ? (uint)0x100 : 0x000;
+            IsCarry = (memVal & 0x01) == 0x01;
+            memVal >>= 1;
+            SetSign(memVal);
+            SetZero(memVal);
+
+            return (byte)memVal;
+        }
+
+        #endregion
+
+        public void Run()
+        {
+            Run(0x0000);
+        }
+
+        public void Run(ushort startAddr)
+        {
+            DateTime startTime = DateTime.Now, endTime = DateTime.Now;
+            TimeSpan scratch = TimeSpan.FromMilliseconds(0.0);
+            ushort tempAdd = 0;
+            byte memVal = 0;
+            uint tempResult;
+
+            _pc = startAddr;
+
+            for (; ; )
+            {
+                scratch = DateTime.Now.Subtract(startTime);
+                scratch = TimeSpan.FromTicks(scratch.Ticks * MULTIPLIER);
+
+                if (scratch.Ticks < _runTicks)
+                {
+                    Thread.Sleep(TimeSpan.FromTicks(_sleepTicks));
+                    continue;
+                }
+
+                startTime = DateTime.Now;
+                
+                _cycles -= 1;//opcode counter;
+                
+                //read the current opcode
+                _opCode = (OpCodes)_mainMemory.Read(_pc++);
+
+                #region Main Opcode Switch Statement
+                //perform the opcode
+                switch (_opCode)
+                {
+                    //ADC
+                    case OpCodes.ADC_A:
+                            AddWithCarry((uint)TranslateToMemoryValue(AddressingMode.Absolute));
+                            break;
+                    case OpCodes.ADC_Z:
+                            AddWithCarry((uint)TranslateToMemoryValue(AddressingMode.ZeroPage));
+                            break;
+                    case OpCodes.ADC_ZX:
+                            AddWithCarry((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX));
+                            break;
+                    case OpCodes.ADC_I:
+                            AddWithCarry((uint)TranslateToMemoryValue(AddressingMode.Immediate));
+                            break;
+                    case OpCodes.ADC_AX:
+                            AddWithCarry((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX));
+                            break;
+                    case OpCodes.ADC_AY:
+                            AddWithCarry((uint)TranslateToMemoryValue(AddressingMode.AbsoluteY));
+                            break;
+                    case OpCodes.ADC_IX:
+                            AddWithCarry((uint)TranslateToMemoryValue(AddressingMode.IndirectX));
+                            break;
+                    case OpCodes.ADC_IY:
+                            AddWithCarry((uint)TranslateToMemoryValue(AddressingMode.IndirectY));
+                            break;
+
+                    //AND
+                    case OpCodes.AND_A:
+                            And((uint)TranslateToMemoryValue(AddressingMode.Absolute));
+                            break;
+                    case OpCodes.AND_AX:
+                            And((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX));
+                            break;
+                    case OpCodes.AND_AY:
+                            And((uint)TranslateToMemoryValue(AddressingMode.AbsoluteY));
+                            break;
+                    case OpCodes.AND_I:
+                            And((uint)TranslateToMemoryValue(AddressingMode.Immediate));
+                            break;
+                    case OpCodes.AND_IX:
+                            And((uint)TranslateToMemoryValue(AddressingMode.IndirectX));
+                            break;
+                    case OpCodes.AND_IY:
+                            And((uint)TranslateToMemoryValue(AddressingMode.IndirectY));
+                            break;
+                    case OpCodes.AND_Z:
+                            And((uint)TranslateToMemoryValue(AddressingMode.ZeroPage));
+                            break;
+                    case OpCodes.AND_ZX:
+                            And((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX));
+                            break;  
+
+                    //ASL
+                    case OpCodes.ASL_AB:
+                            TranslateValueToMemory(AddressingMode.Absolute, ArithmeticShiftLeft((uint)TranslateToMemoryValue(AddressingMode.Absolute)));
+                            break;
+                    case OpCodes.ASL_A:
+                            TranslateValueToMemory(AddressingMode.Accumulator, ArithmeticShiftLeft((uint)TranslateToMemoryValue(AddressingMode.Accumulator)));
+                            break;
+                    case OpCodes.ASL_AX:
+                            TranslateValueToMemory(AddressingMode.AbsoluteX, ArithmeticShiftLeft((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX)));
+                            break;
+                    case OpCodes.ASL_Z:
+                            TranslateValueToMemory(AddressingMode.ZeroPage, ArithmeticShiftLeft((uint)TranslateToMemoryValue(AddressingMode.ZeroPage)));
+                            break;
+                    case OpCodes.ASL_ZX:
+                            TranslateValueToMemory(AddressingMode.ZeroPageX, ArithmeticShiftLeft((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX)));
+                            break;
+
+                    //Branching
+                    case OpCodes.BCC:
+                            BranchOnCarry((uint)TranslateToMemoryValue(AddressingMode.Relative), false);
+                            break;
+                    case OpCodes.BCS:
+                            BranchOnCarry((uint)TranslateToMemoryValue(AddressingMode.Relative), true);
+                            break;
+                    case OpCodes.BEQ:
+                            BranchOnZero((uint)TranslateToMemoryValue(AddressingMode.Relative), true);
+                            break;
+                    case OpCodes.BMI:
+                            BranchOnSign((uint)TranslateToMemoryValue(AddressingMode.Relative), true);
+                            break;
+                    case OpCodes.BNE:
+                            BranchOnZero((uint)TranslateToMemoryValue(AddressingMode.Relative), false);
+                            break;
+                    case OpCodes.BPL:
+                            BranchOnSign((uint)TranslateToMemoryValue(AddressingMode.Relative), false);
+                            break;
+                    case OpCodes.BVC:
+                            BranchOnOverflow((uint)TranslateToMemoryValue(AddressingMode.Relative), false);
+                            break;
+                    case OpCodes.BVS:
+                            BranchOnOverflow((uint)TranslateToMemoryValue(AddressingMode.Relative), true);
+                            break;
+
+                    //BRK
+                    case OpCodes.BRK: //(Advanced instruction will look into)
+                            //make this optional
+                            //Debugger.Launch();
+                            Break();
+                            break;
+                    //BIT
+                    case OpCodes.BIT_A:
+                            TestBits((uint)TranslateToMemoryValue(AddressingMode.Absolute));
+                            break;
+                    case OpCodes.BIT_Z:
+                            TestBits((uint)TranslateToMemoryValue(AddressingMode.ZeroPage));
+                            break;
+
+                    //Status Clear Operations
+                    case OpCodes.CLC:
+                            IsCarry = false;
+                            break;
+                    case OpCodes.CLD:
+                            IsDecimalMode = false;
+                            break;
+                    case OpCodes.CLI:
+                            InterruptsEnabled = true;
+                            break;
+                    case OpCodes.CLV:
+                            IsOverflow = false;
+                            break;
+
+                    //Compare Operations
+                    case OpCodes.CMP_A:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.Absolute), 0);
+                            break;
+                    case OpCodes.CMP_AX:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX), 0);
+                            break;
+                    case OpCodes.CMP_AY:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.AbsoluteY), 0);
+                            break;
+                    case OpCodes.CMP_I:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.Immediate), 0);
+                            break;
+                    case OpCodes.CMP_IX:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.IndirectX), 0);
+                            break;
+                    case OpCodes.CMP_IY:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.IndirectY), 0);
+                            break;
+                    case OpCodes.CMP_Z:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.ZeroPage), 0);
+                            break;
+                    case OpCodes.CMP_ZX:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX), 0);
+                            break;
+                    case OpCodes.CPX_A:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.Absolute), 1);
+                            break;
+                    case OpCodes.CPX_I:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.Immediate), 1);
+                            break;
+                    case OpCodes.CPX_Z:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.ZeroPage), 1);
+                            break;
+                    case OpCodes.CPY_A:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.Absolute), 2);
+                            break;
+                    case OpCodes.CPY_I:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.Immediate), 2);
+                            break;
+                    case OpCodes.CPY_Z:
+                            Compare((uint)TranslateToMemoryValue(AddressingMode.ZeroPage), 2);
+                            break;
+
+                    //Decrement Operations
+                    case OpCodes.DEC_A:
+                            TranslateValueToMemory(AddressingMode.Absolute, Decrement((uint)TranslateToMemoryValue(AddressingMode.Absolute)));
+                            break;
+                    case OpCodes.DEC_AX:
+                            TranslateValueToMemory(AddressingMode.AbsoluteX, Decrement((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX)));
+                            break;
+                    case OpCodes.DEC_Z:
+                            TranslateValueToMemory(AddressingMode.ZeroPage, Decrement((uint)TranslateToMemoryValue(AddressingMode.ZeroPage)));
+                            break;
+                    case OpCodes.DEC_ZX:
+                            TranslateValueToMemory(AddressingMode.ZeroPageX, Decrement((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX)));
+                            break;
+                    case OpCodes.DEX:
+                            Decrement((byte)0);
+                            break;
+                    case OpCodes.DEY:
+                            Decrement((byte)1);
+                            break;
+
+                    //XOR
+                    case OpCodes.EOR_A:
+                            Xor(TranslateToMemoryValue(AddressingMode.Absolute));
+                            break;
+                    case OpCodes.EOR_AX:
+                            Xor(TranslateToMemoryValue(AddressingMode.AbsoluteX));
+                            break;
+                    case OpCodes.EOR_AY:
+                            Xor(TranslateToMemoryValue(AddressingMode.AbsoluteY));
+                            break;
+                    case OpCodes.EOR_I:
+                            Xor(TranslateToMemoryValue(AddressingMode.Immediate));
+                            break;
+                    case OpCodes.EOR_IX:
+                            Xor(TranslateToMemoryValue(AddressingMode.IndirectX));
+                            break;
+                    case OpCodes.EOR_IY:
+                            Xor(TranslateToMemoryValue(AddressingMode.IndirectY));
+                            break;
+                    case OpCodes.EOR_Z:
+                            Xor(TranslateToMemoryValue(AddressingMode.ZeroPage));
+                            break;
+                    case OpCodes.EOR_ZX:
+                            Xor(TranslateToMemoryValue(AddressingMode.ZeroPageX));
+                            break;
+
+                    //Increment
+                    case OpCodes.INC_A:
+                            TranslateValueToMemory(AddressingMode.Absolute, Increment((uint)TranslateToMemoryValue(AddressingMode.Absolute)));
+                            break;
+                    case OpCodes.INC_AX:
+                            TranslateValueToMemory(AddressingMode.AbsoluteX, Increment((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX)));
+                            break;
+                    case OpCodes.INC_Z:
+                            TranslateValueToMemory(AddressingMode.ZeroPage, Increment((uint)TranslateToMemoryValue(AddressingMode.ZeroPage)));
+                            break;
+                    case OpCodes.INC_ZX:
+                            TranslateValueToMemory(AddressingMode.ZeroPageX, Increment((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX)));
+                            break;
+                    case OpCodes.INX:
+                            Increment((byte)0);
+                            break;
+                    case OpCodes.INY:
+                            Increment((byte)0);
+                            break;
+
+                    //Jump Operations
+                    case OpCodes.JMP_A:
+                            Jump(TranslateToMemoryValue(AddressingMode.Absolute), false);
+                            break;
+                    case OpCodes.JMP_I:
+                            Jump(TranslateToMemoryValue(AddressingMode.IndirectAbsolute), false);
+                            break;
+                    case OpCodes.JSR:
+                            Jump(TranslateToMemoryValue(AddressingMode.Absolute), true);
+                            break;
+
+                    //Load Operations
+                    case OpCodes.LDA_A:
+                            Load(TranslateToMemoryValue(AddressingMode.Absolute), 0);
+                            break;
+                    case OpCodes.LDA_AX:
+                            Load(TranslateToMemoryValue(AddressingMode.AbsoluteX), 0);
+                            break;
+                    case OpCodes.LDA_AY:
+                            Load(TranslateToMemoryValue(AddressingMode.AbsoluteY), 0);
+                            break;
+                    case OpCodes.LDA_I:
+                            Load(TranslateToMemoryValue(AddressingMode.Immediate), 0);
+                            break;
+                    case OpCodes.LDA_IX:
+                            Load(TranslateToMemoryValue(AddressingMode.IndirectX), 0);
+                            break;
+                    case OpCodes.LDA_IY:
+                            Load(TranslateToMemoryValue(AddressingMode.IndirectY), 0);
+                            break;
+                    case OpCodes.LDA_Z:
+                            Load(TranslateToMemoryValue(AddressingMode.ZeroPage), 0);
+                            break;
+                    case OpCodes.LDA_ZX:
+                            Load(TranslateToMemoryValue(AddressingMode.ZeroPageX), 0);
+                            break;
+                    case OpCodes.LDX_A:
+                            Load(TranslateToMemoryValue(AddressingMode.Absolute), 1);
+                            break;
+                    case OpCodes.LDX_AY:
+                            Load(TranslateToMemoryValue(AddressingMode.AbsoluteY), 1);
+                            break;
+                    case OpCodes.LDX_I:
+                            Load(TranslateToMemoryValue(AddressingMode.Immediate), 1);
+                            break;
+                    case OpCodes.LDX_Z:
+                            Load(TranslateToMemoryValue(AddressingMode.ZeroPage), 1);
+                            break;
+                    case OpCodes.LDX_ZY:
+                            Load(TranslateToMemoryValue(AddressingMode.ZeroPageY), 1);
+                            break;
+                    case OpCodes.LDY_A:
+                            Load(TranslateToMemoryValue(AddressingMode.Absolute), 2);
+                            break;
+                    case OpCodes.LDY_AX:
+                            Load(TranslateToMemoryValue(AddressingMode.AbsoluteX), 2);
+                            break;
+                    case OpCodes.LDY_I:
+                            Load(TranslateToMemoryValue(AddressingMode.Immediate), 2);
+                            break;
+                    case OpCodes.LDY_Z:
+                            Load(TranslateToMemoryValue(AddressingMode.ZeroPage), 2);
+                            break;
+                    case OpCodes.LDY_ZX:
+                            Load(TranslateToMemoryValue(AddressingMode.ZeroPageX), 2);
+                            break;
+
+                    //LSR
+                    case OpCodes.LSR_A:
+                            TranslateValueToMemory(AddressingMode.Absolute, ArithmeticShiftRight((uint)TranslateToMemoryValue(AddressingMode.Absolute)));
+                            break;
+                    case OpCodes.LSR_AC:
+                            TranslateValueToMemory(AddressingMode.Accumulator, ArithmeticShiftRight((uint)TranslateToMemoryValue(AddressingMode.Accumulator)));
+                            break;
+                    case OpCodes.LSR_AX:
+                            TranslateValueToMemory(AddressingMode.AbsoluteX, ArithmeticShiftRight((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX)));
+                            break;
+                    case OpCodes.LSR_Z:
+                            TranslateValueToMemory(AddressingMode.ZeroPage, ArithmeticShiftRight((uint)TranslateToMemoryValue(AddressingMode.ZeroPage)));
+                            break;
+                    case OpCodes.LSR_ZX:
+                            TranslateValueToMemory(AddressingMode.ZeroPageX, ArithmeticShiftRight((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX)));
+                            break;
+
+                    //NOP
+                    case OpCodes.NOP:
+                            break;
+
+                    //OR
+                    case OpCodes.ORA_A:
+                            Xor(TranslateToMemoryValue(AddressingMode.Absolute));
+                            break;
+                    case OpCodes.ORA_AX:
+                            Xor(TranslateToMemoryValue(AddressingMode.AbsoluteX));
+                            break;
+                    case OpCodes.ORA_AY:
+                            Xor(TranslateToMemoryValue(AddressingMode.AbsoluteY));
+                            break;
+                    case OpCodes.ORA_I:
+                            Xor(TranslateToMemoryValue(AddressingMode.Immediate));
+                            break;
+                    case OpCodes.ORA_IX:
+                            Xor(TranslateToMemoryValue(AddressingMode.IndirectX));
+                            break;
+                    case OpCodes.ORA_IY:
+                            Xor(TranslateToMemoryValue(AddressingMode.IndirectY));
+                            break;
+                    case OpCodes.ORA_Z:
+                            Xor(TranslateToMemoryValue(AddressingMode.ZeroPage));
+                            break;
+                    case OpCodes.ORA_ZX:
+                            Xor(TranslateToMemoryValue(AddressingMode.ZeroPageX));
+                            break;
+
+                    //Stack Operations
+                    case OpCodes.PHA:
+                            PushToStack(0);
+                            break;
+                    case OpCodes.PHP:
+                            PushToStack(1);
+                            break;
+                    case OpCodes.PLA:
+                            PullFromStack(0);
+                            break;
+                    case OpCodes.PLP:
+                            PullFromStack(1);
+                            break;
+
+                    //ROL
+                    case OpCodes.ROL_A:
+                            TranslateValueToMemory(AddressingMode.Absolute, RotateLeft((uint)TranslateToMemoryValue(AddressingMode.Absolute)));
+                            break;
+                    case OpCodes.ROL_AC:
+                            TranslateValueToMemory(AddressingMode.Accumulator, RotateLeft((uint)TranslateToMemoryValue(AddressingMode.Accumulator)));
+                            break;
+                    case OpCodes.ROL_AX:
+                            TranslateValueToMemory(AddressingMode.AbsoluteX, RotateLeft((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX)));
+                            break;
+                    case OpCodes.ROL_Z:
+                            TranslateValueToMemory(AddressingMode.ZeroPage, RotateLeft((uint)TranslateToMemoryValue(AddressingMode.ZeroPage)));
+                            break;
+                    case OpCodes.ROL_ZX:
+                            TranslateValueToMemory(AddressingMode.ZeroPageX, RotateLeft((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX)));
+                            break;
+
+                    //ROR
+                    case OpCodes.ROR_A:
+                            TranslateValueToMemory(AddressingMode.Absolute, RotateRight((uint)TranslateToMemoryValue(AddressingMode.Absolute)));
+                            break;
+                    case OpCodes.ROR_AC:
+                            TranslateValueToMemory(AddressingMode.Accumulator, RotateRight((uint)TranslateToMemoryValue(AddressingMode.Accumulator)));
+                            break;
+                    case OpCodes.ROR_AX:
+                            TranslateValueToMemory(AddressingMode.AbsoluteX, RotateRight((uint)TranslateToMemoryValue(AddressingMode.AbsoluteX)));
+                            break;
+                    case OpCodes.ROR_Z:
+                            TranslateValueToMemory(AddressingMode.ZeroPage, RotateRight((uint)TranslateToMemoryValue(AddressingMode.ZeroPage)));
+                            break;
+                    case OpCodes.ROR_ZX:
+                            TranslateValueToMemory(AddressingMode.ZeroPageX, RotateRight((uint)TranslateToMemoryValue(AddressingMode.ZeroPageX)));
+                            break;
+
+                    default:
+                        throw new Exception("Bad opcode");
+                }
+                #endregion
+
+                if (_cycles <= 0)
+                {
+                    if (_break)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}

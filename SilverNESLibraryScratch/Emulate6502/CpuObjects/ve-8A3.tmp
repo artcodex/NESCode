@@ -1,0 +1,112 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace Emulate6502.CpuObjects
+{
+    //Again a very simple prototype although
+    //we do play with a downward and upward growing stack
+    //don't provide constructor overrides
+    //currently we will assume a little endian machine
+    //with 8-bit stack size (which is exactly the 6502 model)
+    //Fix this to not rely on negative internal stack pointer
+    internal class Stack
+    {
+        private uint _stackSize;
+        private Memory _memorySpace;
+        private uint _baseAddress;
+        private bool _growsDownward;
+        private uint _stackPointer;
+
+        public uint BaseAddress 
+        {
+            get
+            {
+                return _baseAddress;
+            }
+        }
+
+        public byte StackPointer
+        {
+            get
+            {
+                return (byte)Math.Abs(_stackPointer);
+            }
+            set
+            {
+                _stackPointer = _growsDownward ? -value : value;
+            }
+        }
+
+        public uint StackAbsolutePointer
+        {
+            get
+            {
+                return (uint)(((int)_baseAddress) + _stackPointer);
+            }
+        }
+
+        public bool GrowsDownward
+        {
+            get
+            {
+                return _growsDownward;
+            }
+        }
+
+        public Stack(uint stackSize,
+                     uint baseAddress,
+                     bool growsDownward,
+                     Memory backingMemSpace) 
+        {
+            _stackSize = stackSize;
+            //_baseAddress = baseAddress;
+            _growsDownward = growsDownward;
+            _stackPointer = _growsDownward ? _stackSize : 0;
+            _baseAddress = _growsDownward ? baseAddress - _stackSize : baseAddress;
+            _memorySpace = backingMemSpace;
+        }
+
+        public void Push(byte value)
+        {
+            if (GrowsDownward)
+            {
+                --_stackPointer;
+            }
+            else
+            {
+                ++_stackPointer;
+            }
+
+            if (Math.Abs(_stackPointer) > _stackSize)
+            {
+                _stackPointer = 0;
+            }
+
+            _memorySpace.Write(StackAbsolutePointer, value);
+        }
+
+        public byte Pop()
+        {
+            byte retValue = _memorySpace.Read(StackAbsolutePointer);
+
+            if (GrowsDownward)
+            {
+                ++_stackPointer;
+            }
+            else
+            {
+                --_stackPointer;
+            }
+
+            if ((_growsDownward && _stackPointer > 0) ||
+                (_stackPointer < 0 && !_growsDownward))
+            {
+                _stackPointer = (int)(_baseAddress) + ((int)(_stackSize) * (_growsDownward ? -1 : 1));
+            }
+
+            return retValue;
+        }
+    }
+}

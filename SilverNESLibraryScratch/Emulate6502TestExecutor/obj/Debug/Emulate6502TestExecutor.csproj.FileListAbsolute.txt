@@ -1,0 +1,32 @@
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502TestExecutor.exe
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502TestExecutor.pdb
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.exe
+C:\Users\Avi Brenner\Documents\Visual Studio 2008\Projects\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.pdb
+C:\Users\avibrenn.NORTHAMERICA\Documents\Visual Studio 2008\Projects\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.exe
+C:\Users\avibrenn.NORTHAMERICA\Documents\Visual Studio 2008\Projects\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.pdb
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.exe
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.pdb
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502TestExecutor.exe
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502TestExecutor.pdb
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502.dll
+C:\Users\Avi Brenner\Documents\Downloads\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502.pdb
+C:\Users\Avi\Documents\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.exe
+C:\Users\Avi\Documents\Nintendo\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.pdb
+C:\Documents and Settings\Avi Brenner\My Documents\Downloads\Nintendo\SilverNESLibraryScratch1409\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.exe
+C:\Documents and Settings\Avi Brenner\My Documents\Downloads\Nintendo\SilverNESLibraryScratch1409\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.pdb
+C:\dd_nin\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.exe
+C:\dd_nin\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.pdb
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502TestExecutor.exe
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502TestExecutor.pdb
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502.dll
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502.pdb
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.exe
+C:\Users\Avi\Downloads\SilverNESLibraryScratch190609\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\Emulate6502TestExecutor.pdb
+C:\dd_nin\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502TestExecutor.exe
+C:\dd_nin\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502TestExecutor.pdb
+C:\dd_nin\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502.dll
+C:\dd_nin\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\bin\Debug\Emulate6502.pdb
+C:\dd_nin\SilverNESLibraryScratch\SilverNESLibraryScratch\Emulate6502TestExecutor\obj\Debug\ResolveAssemblyReference.cache
